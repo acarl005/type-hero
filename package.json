@@ -1,0 +1,16 @@
+{
+  "name": "type-test",
+  "version": "1.0.0",
+  "description": "Terminal based game to improve your typing speed",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Andrew Carlson <acarl005@g.ucla.edu>",
+  "license": "MIT",
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "chalk": "^2.0.1",
+    "cli-highlight": "^1.1.4"
+  }
+}
