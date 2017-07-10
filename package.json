@@ -4,7 +4,7 @@
   "description": "Terminal based game to improve your typing speed",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "author": "Andrew Carlson <acarl005@g.ucla.edu>",
   "license": "MIT",
