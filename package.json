@@ -1,5 +1,5 @@
 {
-  "name": "type-test",
+  "name": "type-hero",
   "version": "1.0.0",
   "description": "Terminal based game to improve your typing speed",
   "main": "index.js",
