@@ -16,7 +16,6 @@ const screen = blessed.screen({
   }
 })
 
-
 // these are all the keys that the player pressed
 const keyStack = []
 
@@ -53,6 +52,12 @@ const alert = blessed.box({
 // the message for passing to the alert box
 let alertMsg = ''
 
+// State for the current session
+let state = {
+  numBackspaces: 0,
+  errors: []
+}
+
 if (DEBUG) {
   screen.append(debug)
   screen.append(alert)
@@ -66,33 +71,49 @@ screen.key([ 'C-c' ], () => process.exit(0))
 
 // the handler for all other keypresses
 screen.on('keypress', (ch, key) => {
+  // save time of key press
+  let now = Date.now()
+
+  if( !state.startTime ) state.startTime = now
 
   // add some debug info
-  alertMsg = JSON.stringify(key)
+  alertMsg = JSON.stringify(key) + JSON.stringify(ch)
 
+  // default to the key press is correct
+  let isCorrect = true
   // ctrl+r is for removing the alert message in DEBUG mode
   if (key.ctrl && key.name === 'r') {
     alertMsg = ''
-  // on mac, pressing enter triggers TWO keypresses, one called 'enter' and one called 'return'. we only want to respond to one of those. so lets ignore 'return'
+  // on mac, pressing enter triggers TWO keypresses, one called 'enter' and one called 'return'.
+  // we only want to respond to one of those. so lets ignore 'return'
   } else if (
     key.name === 'return' ||
     key.ctrl
   ) {
     'ignore'
+    return
   } else if (key.name === 'backspace') {
+    state.numBackspaces++
     keyStack.pop()
   // handle all the other typing
   } else {
     const keyObj = {
-      key: ch,
+      key: ch
     }
     if (key.name === 'enter') {
       keyObj.key = '\n'
+      isCorrect = code[keyStack.length] === '\n'
+    } else {
+      isCorrect = code[keyStack.length] === ch
     }
-    keyObj.error = code[keyStack.length] !== keyObj.key
+    keyObj.error = !isCorrect
     keyStack.push(keyObj)
   }
 
+  // highlight based on the current state, have they got everything correct up to this point?
+  let highlighted
+  let errors = state.errors
+  let wasCorrect = state.correct
   // fix the vertical scroll position, so that the screen moves downward as the game advances
   const lineNum = (code.slice(0, keyStack.length).match(/\n/g) || []).length
   // need to subtract the borders, which take up a width of 1 each
@@ -101,16 +122,31 @@ screen.on('keypress', (ch, key) => {
   const boxCenter = Math.floor(innerBoxHeight / 2)
   box.scrollTo(lineNum + boxCenter)
 
-  // highlight based on the current state, have they got everything correct up to this point?
-  const correct = keyStack.every(keyObj => !keyObj.error)
-  let highlighted
-  // if so, the "cursor" is green
-  if (correct) {
+  // check for incorrect key press
+  state.correct = keyStack.every(keyObj => !keyObj.error)
+  if( state.correct ) {
+    if(!wasCorrect && errors.length > 0) {
+      errors[errors.length-1].end = now
+    }
+    if( code.length === keyStack.length && wasCorrect ) {
+      state.endTime = now
+      // User has finished the test, what to do?
+    }
+    // if so, the "cursor" is green
     highlighted = highlight(code.slice(0, keyStack.length), { language: 'javascript' })
       + chalk.bgGreen(wrapNewlines(code[keyStack.length]))
       + code.slice(keyStack.length + 1)
-  // if not, the cursor is yellow and all the characters since the first error are red
   } else {
+    // check if already in error state
+    if( wasCorrect ) {
+      errors.push({
+        count: 0,
+        start: now
+      })
+    } else if( key.name !== 'backspace' && errors.length > 0) {
+      errors[errors.length-1].count++
+    }
+    // if not, the cursor is yellow and all the characters since the first error are red
     const errIndex = keyStack.findIndex(keyObj => keyObj.error)
     highlighted = highlight(code.slice(0, errIndex), { language: 'javascript' })
       + chalk.bgRed(code.slice(errIndex, keyStack.length))
@@ -121,7 +157,7 @@ screen.on('keypress', (ch, key) => {
   // update and re-render everything
   box.setContent(highlighted)
   debug.setContent(keyStack.map(obj => obj.key).join(''))
-  alert.setContent(String(alertMsg))
+  alert.setContent(String(alertMsg) + JSON.stringify(state))
   screen.render()
 })
 
