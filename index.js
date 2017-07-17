@@ -5,7 +5,7 @@ const path = require('path')
 const { highlight } = require('cli-highlight')
 
 // a runtime option for truning on some helpful internal info
-const DEBUG = true
+const DEBUG = false
 
 // create the one and only screen we'll need
 const screen = blessed.screen({
