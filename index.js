@@ -19,8 +19,13 @@ const screen = blessed.screen({
 // these are all the keys that the player pressed
 const keyStack = []
 
-// load the code they are gonna type
-const code = fs.readFileSync(path.join(__dirname, 'index.js'), 'utf8')
+// pick a random javascript file in there
+const srcDir = path.join(__dirname, 'code', 'javascript', 'jquery')
+const files = fs.readdirSync(srcDir)
+const file = path.join(srcDir, files[Math.floor(Math.random() * files.length)])
+
+// and read in the source code
+const code = fs.readFileSync(file, 'utf8')
 
 // this box will show the main game window
 const box = blessed.box({
@@ -54,6 +59,7 @@ let alertMsg = ''
 
 // State for the current session
 let state = {
+  startTime: null,
   numBackspaces: 0,
   errors: []
 }
@@ -74,7 +80,9 @@ screen.on('keypress', (ch, key) => {
   // save time of key press
   let now = Date.now()
 
-  if( !state.startTime ) state.startTime = now
+  if (!state.startTime) {
+    state.startTime = now
+  }
 
   // add some debug info
   alertMsg = JSON.stringify(key) + JSON.stringify(ch)
@@ -124,13 +132,29 @@ screen.on('keypress', (ch, key) => {
 
   // check for incorrect key press
   state.correct = keyStack.every(keyObj => !keyObj.error)
-  if( state.correct ) {
-    if(!wasCorrect && errors.length > 0) {
-      errors[errors.length-1].end = now
+  if (state.correct) {
+    if (!wasCorrect && errors.length > 0) {
+      errors[errors.length - 1].end = now
     }
-    if( code.length === keyStack.length && wasCorrect ) {
+    if (code.length === keyStack.length && wasCorrect) {
       state.endTime = now
+      const minutes = (state.endTime - state.startTime) / 1000 / 60
       // User has finished the test, what to do?
+      const results = blessed.box({
+        parent: screen,
+        top: '25%',
+        left: '25%',
+        height: '50%',
+        width: '50%',
+        content: `
+Done!
+${keyStack.length / minutes / 5} WPM
+        `,
+        border: {
+          type: 'line'
+        }
+      })
+      return screen.render()
     }
     // if so, the "cursor" is green
     highlighted = highlight(code.slice(0, keyStack.length), { language: 'javascript' })
@@ -138,13 +162,13 @@ screen.on('keypress', (ch, key) => {
       + code.slice(keyStack.length + 1)
   } else {
     // check if already in error state
-    if( wasCorrect ) {
+    if (wasCorrect) {
       errors.push({
         count: 0,
         start: now
       })
-    } else if( key.name !== 'backspace' && errors.length > 0) {
-      errors[errors.length-1].count++
+    } else if (key.name !== 'backspace' && errors.length > 0) {
+      errors[errors.length - 1].count++
     }
     // if not, the cursor is yellow and all the characters since the first error are red
     const errIndex = keyStack.findIndex(keyObj => keyObj.error)
