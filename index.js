@@ -111,11 +111,17 @@ screen.on('keypress', (ch, key) => {
     if (key.name === 'enter') {
       keyObj.key = '\n'
       isCorrect = code[keyStack.length] === '\n'
+      while (code[keyStack.length + 1].match(/\s/)) {
+        keyStack.push({
+          key: code[keyStack.length + 1],
+          error: false
+        })
+      }
     } else {
       isCorrect = code[keyStack.length] === ch
     }
-    keyObj.error = !isCorrect
     keyStack.push(keyObj)
+    keyObj.error = !isCorrect
   }
 
   // highlight based on the current state, have they got everything correct up to this point?
