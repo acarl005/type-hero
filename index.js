@@ -2,10 +2,19 @@ const blessed = require('blessed')
 const fs = require('fs')
 const chalk = require('chalk')
 const path = require('path')
-const { highlight } = require('cli-highlight')
+const { highlight } = require('@acarl005/cli-highlight')
 
 // a runtime option for truning on some helpful internal info
 const DEBUG = false
+
+const highlightOptions = {
+  language: 'javascript',
+  theme: {
+    string: chalk.magenta,
+    comment: chalk.gray,
+    keyword: chalk.green.bold
+  }
+}
 
 // create the one and only screen we'll need
 const screen = blessed.screen({
@@ -21,7 +30,7 @@ const keyStack = []
 
 // pick a random javascript file in there
 const srcDir = path.join(__dirname, 'code', 'javascript', 'jquery')
-const files = fs.readdirSync(srcDir)
+const files = fs.readdirSync(srcDir).filter(name => /\.js$/.test(name))
 const file = path.join(srcDir, files[Math.floor(Math.random() * files.length)])
 
 // and read in the source code
@@ -111,7 +120,7 @@ screen.on('keypress', (ch, key) => {
     if (key.name === 'enter') {
       keyObj.key = '\n'
       isCorrect = code[keyStack.length] === '\n'
-      while (code[keyStack.length + 1].match(/\s/)) {
+      while (/\s/.test(code[keyStack.length + 1])) {
         keyStack.push({
           key: code[keyStack.length + 1],
           error: false
@@ -146,7 +155,7 @@ screen.on('keypress', (ch, key) => {
       state.endTime = now
       const minutes = (state.endTime - state.startTime) / 1000 / 60
       // User has finished the test, what to do?
-      const results = blessed.box({
+      blessed.box({
         parent: screen,
         top: '25%',
         left: '25%',
@@ -163,7 +172,7 @@ ${keyStack.length / minutes / 5} WPM
       return screen.render()
     }
     // if so, the "cursor" is green
-    highlighted = highlight(code.slice(0, keyStack.length), { language: 'javascript' })
+    highlighted = highlight(code.slice(0, keyStack.length), highlightOptions)
       + chalk.bgGreen(wrapNewlines(code[keyStack.length]))
       + code.slice(keyStack.length + 1)
   } else {
@@ -178,7 +187,7 @@ ${keyStack.length / minutes / 5} WPM
     }
     // if not, the cursor is yellow and all the characters since the first error are red
     const errIndex = keyStack.findIndex(keyObj => keyObj.error)
-    highlighted = highlight(code.slice(0, errIndex), { language: 'javascript' })
+    highlighted = highlight(code.slice(0, errIndex), highlightOptions)
       + chalk.bgRed(code.slice(errIndex, keyStack.length))
       + chalk.bgYellow(wrapNewlines(code[keyStack.length]))
       + code.slice(keyStack.length + 1)
