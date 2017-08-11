@@ -173,7 +173,7 @@ ${keyStack.length / minutes / 5} WPM
     }
     // if so, the "cursor" is green
     highlighted = highlight(code.slice(0, keyStack.length), highlightOptions)
-      + chalk.bgGreen(wrapNewlines(code[keyStack.length]))
+      + chalk.bgGreen(wrapWhitespace(code[keyStack.length]))
       + code.slice(keyStack.length + 1)
   } else {
     // check if already in error state
@@ -189,7 +189,7 @@ ${keyStack.length / minutes / 5} WPM
     const errIndex = keyStack.findIndex(keyObj => keyObj.error)
     highlighted = highlight(code.slice(0, errIndex), highlightOptions)
       + chalk.bgRed(code.slice(errIndex, keyStack.length))
-      + chalk.bgYellow(wrapNewlines(code[keyStack.length]))
+      + chalk.bgYellow(wrapWhitespace(code[keyStack.length]))
       + code.slice(keyStack.length + 1)
   }
 
@@ -202,10 +202,14 @@ ${keyStack.length / minutes / 5} WPM
 
 
 // newlines are invlisible. lets give them a little arrow emoji to look at instead
-function wrapNewlines(ch) {
-  if (ch === '\n') {
+function wrapWhitespace(ch) {
+  switch (ch) {
+  case '\n':
     return '↩︎ \n'
+  case '\t':
+    return '<tb>'
+  default:
+    return ch
   }
-  return ch
 }
 
